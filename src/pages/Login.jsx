@@ -1,11 +1,13 @@
 import { useAuth } from '../context/AuthContext'
-import { Navigate } from 'react-router-dom'
+import { Navigate, useSearchParams } from 'react-router-dom'
 import { oauthStartUrl } from '../config/api'
 import { useTenant } from '../context/TenantContext'
 
 export default function Login() {
   const { token } = useAuth()
   const { slug, restaurant } = useTenant()
+  const [params] = useSearchParams()
+  const error = params.get('error')
 
   if (token) return <Navigate to={`/r/${slug}/admin/dashboard`} replace />
 
@@ -22,6 +24,11 @@ export default function Login() {
           <p className="text-3xl font-bold text-gray-900">{restaurant?.name || 'Restaurant'}</p>
           <p className="text-gray-400 text-sm mt-1">Staff & Admin Portal</p>
         </div>
+        {error && (
+          <p role="alert" className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            {error}
+          </p>
+        )}
         <button
           onClick={handleGoogleLogin}
           className="w-full flex items-center justify-center gap-3 border border-gray-300 rounded-lg px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"

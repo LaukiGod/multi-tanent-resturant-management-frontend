@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import AdminPanelHeader from '../components/AdminPanelHeader'
 import { usePopup } from '../context/PopupContext'
 import ConfirmDialog from '../components/ConfirmDialog'
+import { isAdminRole } from '../utils/roles'
 
 function getRowClass(item) {
   const now = new Date()
@@ -24,7 +25,7 @@ const CATEGORIES = ['vegetable', 'fruit', 'dairy', 'meat', 'spice', 'beverage', 
 export default function Inventory() {
   const { user } = useAuth()
   const notify = usePopup()
-  const isAdmin = user?.role === 'ADMIN'
+  const isAdmin = isAdminRole(user?.role)
 
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)

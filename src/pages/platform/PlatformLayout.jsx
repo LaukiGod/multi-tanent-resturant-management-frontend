@@ -21,18 +21,21 @@ export default function PlatformLayout() {
   return (
     <div className="min-h-screen bg-gray-900">
       <header className="border-b border-gray-800 bg-gray-900/80 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center gap-6 px-6 py-4">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-3 px-6 py-4">
           <div>
             <p className="text-[10px] uppercase tracking-[0.2em] text-gray-600">Platform</p>
-            <h1 className="text-lg font-semibold text-white">Restaurants</h1>
+            <h1 className="text-lg font-semibold text-white">Console</h1>
           </div>
 
-          <nav className="flex items-center gap-1">
+          <nav className="flex flex-wrap items-center gap-1">
             <NavLink to="/platform/restaurants" end className={linkClass}>
               All restaurants
             </NavLink>
             <NavLink to="/platform/restaurants/new" className={linkClass}>
               Add restaurant
+            </NavLink>
+            <NavLink to="/platform/admins" className={linkClass}>
+              Platform admins
             </NavLink>
           </nav>
 

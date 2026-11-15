@@ -35,6 +35,10 @@ import PlatformLogin from './pages/platform/PlatformLogin'
 import PlatformAuthCallback from './pages/platform/PlatformAuthCallback'
 import PlatformRestaurants from './pages/platform/PlatformRestaurants'
 import PlatformRestaurantNew from './pages/platform/PlatformRestaurantNew'
+import PlatformRestaurantDetail from './pages/platform/PlatformRestaurantDetail'
+import PlatformAdmins from './pages/platform/PlatformAdmins'
+import StaffLogin from './pages/staff/StaffLogin'
+import StaffChooseRestaurant from './pages/staff/StaffChooseRestaurant'
 import PlatformLayout from './pages/platform/PlatformLayout'
 import NoRestaurant from './pages/NoRestaurant'
 
@@ -172,6 +176,8 @@ function PlatformApp() {
             <Route index element={<Navigate to="restaurants" replace />} />
             <Route path="restaurants" element={<PlatformRestaurants />} />
             <Route path="restaurants/new" element={<PlatformRestaurantNew />} />
+            <Route path="restaurants/:id" element={<PlatformRestaurantDetail />} />
+            <Route path="admins" element={<PlatformAdmins />} />
           </Route>
           <Route path="*" element={<Navigate to="/platform/restaurants" replace />} />
         </Routes>
@@ -191,6 +197,12 @@ export default function App() {
         <Route path="/r/:slug" element={<TenantProvider />}>
           <Route path="*" element={<TenantApp />} />
         </Route>
+
+        {/* Shared staff & admin sign-in. The restaurant comes from the Google
+            account, so staff only need to remember one address. */}
+        <Route path="/admin" element={<StaffLogin />} />
+        <Route path="/admin/choose" element={<StaffChooseRestaurant />} />
+        <Route path="/admin/*" element={<Navigate to="/admin" replace />} />
 
         {/* No restaurant in the URL — a "scan the QR on your table" landing page.
             Deliberately not a directory: each restaurant is reached by its own link. */}

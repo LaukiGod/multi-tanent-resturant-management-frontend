@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { platformApi } from '../../api/client'
+import { openRestaurantPanel } from './ui'
 
 const STATUS_STYLES = {
   active: 'bg-green-500/10 text-green-400 ring-green-500/30',
@@ -111,11 +112,11 @@ export default function PlatformRestaurants() {
         </div>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-gray-800">
-          <table className="w-full min-w-[720px] text-left text-sm">
+          <table className="w-full min-w-[880px] text-left text-sm">
             <thead className="bg-gray-800/60 text-xs uppercase tracking-wide text-gray-500">
               <tr>
                 <th className="px-4 py-3">Restaurant</th>
-                <th className="px-4 py-3">Address</th>
+                <th className="px-4 py-3">Kiosk</th>
                 <th className="px-4 py-3">Staff</th>
                 <th className="px-4 py-3">Tables</th>
                 <th className="px-4 py-3">Dishes</th>
@@ -128,7 +129,9 @@ export default function PlatformRestaurants() {
               {rows.map((r) => (
                 <tr key={r._id} className="text-gray-300">
                   <td className="px-4 py-3">
-                    <p className="font-medium text-white">{r.name}</p>
+                    <Link to={`/platform/restaurants/${r._id}`} className="font-medium text-white hover:underline underline-offset-4">
+                      {r.name}
+                    </Link>
                     <p className="text-xs text-gray-500">{r.contactEmail || '—'}</p>
                   </td>
                   <td className="px-4 py-3">
@@ -156,6 +159,23 @@ export default function PlatformRestaurants() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-2">
+                      <button
+                        disabled={r.status !== 'active'}
+                        title={r.status === 'active' ? 'Open this restaurant’s admin panel in a new tab' : 'Activate the restaurant first'}
+                        onClick={() => {
+                          setError('')
+                          if (!openRestaurantPanel(r.slug)) setError('Your platform session has expired. Sign in again.')
+                        }}
+                        className="rounded-md bg-white px-2.5 py-1 text-xs font-medium text-gray-900 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        Open panel
+                      </button>
+                      <Link
+                        to={`/platform/restaurants/${r._id}`}
+                        className="rounded-md border border-gray-700 px-2.5 py-1 text-xs text-gray-300 transition hover:bg-gray-800"
+                      >
+                        Manage
+                      </Link>
                       <button
                         disabled={busyId === r._id}
                         onClick={() => toggleStatus(r)}

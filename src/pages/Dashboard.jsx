@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { api } from '../api/client'
 import { useAuth } from '../context/AuthContext'
 import AdminPanelHeader from '../components/AdminPanelHeader'
+import { isAdminRole } from '../utils/roles'
 
 export default function Dashboard() {
   const { user } = useAuth()
@@ -25,7 +26,7 @@ export default function Dashboard() {
       setAlerts(a)
       const n = await api.get('/restaurant/notifications')
       setNotifications(n)
-      if (user?.role === 'ADMIN') {
+      if (isAdminRole(user?.role)) {
         const m = await api.get('/restaurant/metrics')
         setMetrics(m)
       } else {
@@ -76,7 +77,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {user?.role === 'ADMIN' && metrics && (
+      {isAdminRole(user?.role) && metrics && (
         <div className="bg-white border border-gray-200 rounded-xl p-4 mb-6">
           <p className="font-semibold text-gray-900 mb-2">Manager Metrics</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">

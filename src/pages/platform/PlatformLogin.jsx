@@ -1,11 +1,13 @@
 import { useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { oauthStartUrl, PLATFORM_SCOPE } from '../../config/api'
 
 export default function PlatformLogin() {
   const { token } = useAuth()
   const navigate = useNavigate()
+  const [params] = useSearchParams()
+  const error = params.get('error')
 
   useEffect(() => {
     if (token) navigate('/platform/restaurants', { replace: true })
@@ -24,6 +26,12 @@ export default function PlatformLogin() {
           Manage every restaurant on this deployment. Restricted to platform administrators.
         </p>
 
+        {error && (
+          <p role="alert" className="mt-6 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-400">
+            {error}
+          </p>
+        )}
+
         <button
           onClick={signIn}
           className="mt-8 flex w-full items-center justify-center gap-3 rounded-lg bg-white px-4 py-3 font-medium text-gray-800 transition hover:bg-gray-100"
@@ -38,7 +46,7 @@ export default function PlatformLogin() {
         </button>
 
         <p className="mt-6 text-xs text-gray-600">
-          Restaurant staff sign in at their own restaurant address instead.
+          Restaurant staff sign in at /admin instead.
         </p>
       </div>
     </div>

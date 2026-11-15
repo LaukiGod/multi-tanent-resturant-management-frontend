@@ -3,6 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useAdminLayout } from '../context/AdminLayoutContext'
 import { useTenantNavigate, useTenantPath, useTenant } from '../context/TenantContext'
+import { isAdminRole } from '../utils/roles'
 
 const navItems = [
   { to: '/admin/dashboard', label: 'Dashboard', icon: 'dashboard' },
@@ -172,7 +173,7 @@ export default function Navbar() {
               <span className="truncate">{label}</span>
             </NavLink>
           ))}
-          {user?.role === 'ADMIN' && (
+          {isAdminRole(user?.role) && (
             <>
               <p className="px-3 pb-1 pt-4 text-xs uppercase tracking-wider text-gray-500">Admin</p>
               {adminItems.map(({ to, label, icon }) => (
@@ -280,7 +281,7 @@ export default function Navbar() {
               {!sidebarCollapsed && <span className="truncate">{label}</span>}
             </NavLink>
           ))}
-          {user?.role === 'ADMIN' && (
+          {isAdminRole(user?.role) && (
             <>
               {sidebarCollapsed ? <div className="mx-1 my-2 h-px bg-gray-700" aria-hidden /> : null}
               {!sidebarCollapsed ? (

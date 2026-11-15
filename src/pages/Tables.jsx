@@ -5,6 +5,7 @@ import AllergyBadge from '../components/AllergyBadge'
 import AdminPanelHeader from '../components/AdminPanelHeader'
 import { useAuth } from '../context/AuthContext'
 import { usePopup } from '../context/PopupContext'
+import { isAdminRole } from '../utils/roles'
 
 // QR icon inline — no extra dep
 function QRIcon({ className = 'h-4 w-4' }) {
@@ -24,7 +25,7 @@ const STATUS_CONFIG = {
 export default function Tables() {
   const { user } = useAuth()
   const notify = usePopup()
-  const isAdmin = user?.role === 'ADMIN'
+  const isAdmin = isAdminRole(user?.role)
   const [tables, setTables] = useState([])
   const [orders, setOrders] = useState([])
   const [selectedTable, setSelectedTable] = useState(null)

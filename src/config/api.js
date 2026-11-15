@@ -5,6 +5,10 @@ const API_ROOT = String(import.meta.env.VITE_API_URL || `${MAIN_DOMAIN}/api`).re
 /** Sentinel used for the SUPER_ADMIN console, which belongs to no restaurant. */
 export const PLATFORM_SCOPE = '__platform__'
 
+/** Sentinel for the shared staff sign-in at /admin; the backend works out the
+ *  restaurant from the Google account. */
+export const STAFF_SCOPE = '__staff__'
+
 /**
  * Base URL for one restaurant's API surface.
  * Everything tenant-owned lives under /api/r/:slug/...
@@ -21,9 +25,9 @@ export function platformApiBase() {
 
 /** Where the browser is sent to start Google OAuth for a given scope. */
 export function oauthStartUrl(slug) {
-  return slug === PLATFORM_SCOPE
-    ? `${API_ROOT}/auth/platform/google`
-    : `${tenantApiBase(slug)}/auth/google`
+  if (slug === PLATFORM_SCOPE) return `${API_ROOT}/auth/platform/google`
+  if (slug === STAFF_SCOPE) return `${API_ROOT}/auth/staff/google`
+  return `${tenantApiBase(slug)}/auth/google`
 }
 
 export { MAIN_DOMAIN, API_ROOT }
