@@ -64,6 +64,7 @@ export default function CustomerLayout({ title, children }) {
   const navigate = useTenantNavigate()
   // Tenant-relative — the real path is /r/:slug/customer/track, not /customer/track.
   const pathname = useTenantRelativePath()
+  const notify = usePopup()
   const session = getCustomerSession()
   const onTrack = pathname === '/customer/track'
 
@@ -82,7 +83,7 @@ export default function CustomerLayout({ title, children }) {
       setToastVisible(true)
       setTimeout(() => setToastVisible(false), 3000)
     } catch (e) {
-      alert(e.message)
+      notify.error(e.message)
     } finally {
       setLoading(false)
     }
