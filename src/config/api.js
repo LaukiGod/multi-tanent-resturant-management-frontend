@@ -1,6 +1,33 @@
 const RAW_MAIN_DOMAIN = import.meta.env.VITE_MAIN_DOMAIN || 'http://localhost:5000'
 const MAIN_DOMAIN = String(RAW_MAIN_DOMAIN).replace(/\/+$/, '')
-const API_BASE_URL = import.meta.env.VITE_API_URL || `${MAIN_DOMAIN}/api`
+const API_ROOT = String(import.meta.env.VITE_API_URL || `${MAIN_DOMAIN}/api`).replace(/\/+$/, '')
 
-export { MAIN_DOMAIN, API_BASE_URL }
+/** Sentinel used for the SUPER_ADMIN console, which belongs to no restaurant. */
+export const PLATFORM_SCOPE = '__platform__'
 
+/** Sentinel for the shared staff sign-in at /admin; the backend works out the
+ *  restaurant from the Google account. */
+export const STAFF_SCOPE = '__staff__'
+
+/**
+ * Base URL for one restaurant's API surface.
+ * Everything tenant-owned lives under /api/r/:slug/...
+ */
+export function tenantApiBase(slug) {
+  if (!slug) throw new Error('tenantApiBase() called without a restaurant slug')
+  return `${API_ROOT}/r/${encodeURIComponent(slug)}`
+}
+
+/** Base URL for the platform console (SUPER_ADMIN only). */
+export function platformApiBase() {
+  return `${API_ROOT}/platform`
+}
+
+/** Where the browser is sent to start Google OAuth for a given scope. */
+export function oauthStartUrl(slug) {
+  if (slug === PLATFORM_SCOPE) return `${API_ROOT}/auth/platform/google`
+  if (slug === STAFF_SCOPE) return `${API_ROOT}/auth/staff/google`
+  return `${tenantApiBase(slug)}/auth/google`
+}
+
+export { MAIN_DOMAIN, API_ROOT }

@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import { api } from '../api/client'
 import { useAuth } from '../context/AuthContext'
 import { useAdminLayout } from '../context/AdminLayoutContext'
+import { useTenantNavigate, useTenantPath, useTenant } from '../context/TenantContext'
+import { isAdminRole } from '../utils/roles'
 
 const navItems = [
   { to: '/admin/dashboard', label: 'Dashboard', icon: 'dashboard' },
@@ -89,7 +91,9 @@ function itemClass(collapsed) {
 
 export default function Navbar() {
   const { user, logout } = useAuth()
-  const navigate = useNavigate()
+  const tenantPath = useTenantPath()
+  const { slug, restaurant } = useTenant()
+  const navigate = useTenantNavigate()
   const location = useLocation()
   const {
     mobileNavOpen,
@@ -143,7 +147,7 @@ export default function Navbar() {
           </svg>
         </button>
         <div className="min-w-0 flex-1">
-          <p className="truncate font-bold leading-tight text-gray-900">Restaurant</p>
+          <p className="truncate font-bold leading-tight text-gray-900">{restaurant?.name || 'Restaurant'}</p>
           <p className="truncate text-xs text-gray-500">
             Manager{user?.role ? ` · ${user.role}` : ''}
           </p>
@@ -175,7 +179,7 @@ export default function Navbar() {
       >
         <div className="flex items-center justify-between gap-2 border-b border-gray-700 px-4 py-4">
           <div className="min-w-0">
-            <p className="truncate text-lg font-bold leading-tight text-white">Restaurant</p>
+            <p className="truncate text-lg font-bold leading-tight text-white">{restaurant?.name || 'Restaurant'}</p>
             <p className="mt-0.5 text-xs text-gray-400">Manager</p>
           </div>
           <button
@@ -191,17 +195,17 @@ export default function Navbar() {
         </div>
         <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain px-3 py-4">
           {navItems.map(({ to, label, icon, badgeKey }) => (
-            <NavLink key={to} to={to} onClick={() => setMobileNavOpen(false)} className={itemClass(false)}>
+            <NavLink key={to} to={tenantPath(to)} onClick={() => setMobileNavOpen(false)} className={itemClass(false)}>
               <NavIcon name={icon} />
               <span className="truncate">{label}</span>
               {badgeKey ? <NavBadge count={notifCounts[badgeKey]} /> : null}
             </NavLink>
           ))}
-          {user?.role === 'ADMIN' && (
+          {isAdminRole(user?.role) && (
             <>
               <p className="px-3 pb-1 pt-4 text-xs uppercase tracking-wider text-gray-500">Admin</p>
               {adminItems.map(({ to, label, icon }) => (
-                <NavLink key={to} to={to} onClick={() => setMobileNavOpen(false)} className={itemClass(false)}>
+                <NavLink key={to} to={tenantPath(to)} onClick={() => setMobileNavOpen(false)} className={itemClass(false)}>
                   <NavIcon name={icon} />
                   <span className="truncate">{label}</span>
                 </NavLink>
@@ -272,8 +276,8 @@ export default function Navbar() {
 
         <div className="flex min-h-[3.5rem] items-center justify-between gap-1 border-b border-gray-700 px-3 py-3">
           <div className={sidebarCollapsed ? 'sr-only' : 'min-w-0 flex-1 pl-0.5'}>
-            <p className="truncate text-sm font-bold leading-tight text-white">Restaurant</p>
-            <p className="text-[10px] text-gray-400">Manager</p>
+            <p className="truncate text-sm font-bold leading-tight text-white">{restaurant?.name || 'Restaurant'}</p>
+            <p className="truncate text-[10px] text-gray-400">/r/{slug}</p>
           </div>
           <button
             type="button"
@@ -296,7 +300,7 @@ export default function Navbar() {
           {navItems.map(({ to, label, icon, badgeKey }) => (
             <NavLink
               key={to}
-              to={to}
+              to={tenantPath(to)}
               end={to === '/admin/dashboard'}
               title={sidebarCollapsed ? label : undefined}
               className={itemClass(sidebarCollapsed)}
@@ -306,7 +310,7 @@ export default function Navbar() {
               {badgeKey && !sidebarCollapsed ? <NavBadge count={notifCounts[badgeKey]} /> : null}
             </NavLink>
           ))}
-          {user?.role === 'ADMIN' && (
+          {isAdminRole(user?.role) && (
             <>
               {sidebarCollapsed ? <div className="mx-1 my-2 h-px bg-gray-700" aria-hidden /> : null}
               {!sidebarCollapsed ? (
@@ -315,7 +319,7 @@ export default function Navbar() {
               {adminItems.map(({ to, label, icon }) => (
                 <NavLink
                   key={to}
-                  to={to}
+                  to={tenantPath(to)}
                   title={sidebarCollapsed ? label : undefined}
                   className={itemClass(sidebarCollapsed)}
                 >

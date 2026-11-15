@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import { AdminLayoutProvider } from './context/AdminLayoutContext'
+import { TenantProvider, useTenant } from './context/TenantContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import RoleRoute from './components/RoleRoute'
 import Navbar from './components/Navbar'
@@ -10,6 +11,7 @@ import { useAdminLayout } from './context/AdminLayoutContext'
 import { useMediaQuery } from './hooks/useMediaQuery'
 import { PopupProvider } from './context/PopupContext'
 import { AnimatePresence } from 'framer-motion'
+import { PLATFORM_SCOPE } from './config/api'
 
 import Login from './pages/Login'
 import AuthCallback from './pages/AuthCallback'
@@ -29,22 +31,37 @@ import KioskOrderSuccess from './pages/kiosk/OrderSuccess'
 import KioskOrderTracking from './pages/kiosk/KioskOrderTracking'
 import KioskOrderFeedback from './pages/kiosk/KioskOrderFeedback'
 
+import PlatformLogin from './pages/platform/PlatformLogin'
+import PlatformAuthCallback from './pages/platform/PlatformAuthCallback'
+import PlatformRestaurants from './pages/platform/PlatformRestaurants'
+import PlatformRestaurantNew from './pages/platform/PlatformRestaurantNew'
+import PlatformRestaurantDetail from './pages/platform/PlatformRestaurantDetail'
+import PlatformAdmins from './pages/platform/PlatformAdmins'
+import StaffLogin from './pages/staff/StaffLogin'
+import StaffChooseRestaurant from './pages/staff/StaffChooseRestaurant'
+import PlatformLayout from './pages/platform/PlatformLayout'
+import NoRestaurant from './pages/NoRestaurant'
+
 const KIOSK_PERSISTED_PATHS = new Set(['/tables', '/order-tracking', '/order-success'])
 
 /**
  * Persists the current kiosk step so a return to the app root can restore it (see `getKioskResumePath` + `Welcome`).
+ * Paths are stored tenant-relative, so the /r/:slug prefix is stripped first.
  */
 function KioskPathSync() {
   const { setKioskPath } = useKioskSession()
+  const { slug } = useTenant()
   const setKioskPathRef = useRef(setKioskPath)
   setKioskPathRef.current = setKioskPath
   const { pathname } = useLocation()
 
   useEffect(() => {
-    if (KIOSK_PERSISTED_PATHS.has(pathname)) {
-      setKioskPathRef.current(pathname)
+    const prefix = `/r/${slug}`
+    const relative = pathname.startsWith(prefix) ? pathname.slice(prefix.length) || '/' : pathname
+    if (KIOSK_PERSISTED_PATHS.has(relative)) {
+      setKioskPathRef.current(relative)
     }
-  }, [pathname])
+  }, [pathname, slug])
   return null
 }
 
@@ -75,33 +92,59 @@ function AppLayout() {
   )
 }
 
-function AnimatedRoutes() {
+/**
+ * Everything inside one restaurant. `TenantProvider` (the route element above
+ * this) has already resolved :slug and pointed the API client at it, so the
+ * auth session and kiosk state below are scoped to that restaurant.
+ */
+function TenantApp() {
+  const { slug } = useTenant()
+
+  return (
+    <AuthProvider scope={slug}>
+      <PopupProvider>
+        <KioskSessionProvider>
+          <KioskPathSync />
+          <TenantRoutes />
+        </KioskSessionProvider>
+      </PopupProvider>
+    </AuthProvider>
+  )
+}
+
+/** Redirect to a path inside the current restaurant. */
+function TenantRedirect({ to }) {
+  const { slug } = useTenant()
+  return <Navigate to={`/r/${slug}${to === '/' ? '' : to}`} replace />
+}
+
+function TenantRoutes() {
   const location = useLocation()
 
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
         {/* Kiosk ordering flow */}
-        <Route path="/" element={<KioskWelcome />} />
-        <Route path="/tables" element={<KioskTables />} />
-        <Route path="/register" element={<Navigate to="/tables" replace />} />
-        <Route path="/menu" element={<Navigate to="/tables" replace />} />
-        <Route path="/order-tracking" element={<KioskOrderTracking />} />
-        <Route path="/order-feedback" element={<KioskOrderFeedback />} />
-        <Route path="/order-success" element={<KioskOrderSuccess />} />
+        <Route index element={<KioskWelcome />} />
+        <Route path="tables" element={<KioskTables />} />
+        <Route path="register" element={<TenantRedirect to="/tables" />} />
+        <Route path="menu" element={<TenantRedirect to="/tables" />} />
+        <Route path="order-tracking" element={<KioskOrderTracking />} />
+        <Route path="order-feedback" element={<KioskOrderFeedback />} />
+        <Route path="order-success" element={<KioskOrderSuccess />} />
 
         {/* Staff/Admin auth */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="login" element={<Login />} />
+        <Route path="auth/callback" element={<AuthCallback />} />
 
         {/* Legacy customer login route (no longer used) */}
-        <Route path="/customer/login" element={<Navigate to="/tables" replace />} />
-        <Route path="/user/table-select/:tableId" element={<TableSelectEntry />} />
-        <Route path="/customer/menu" element={<CustomerMenu />} />
-        <Route path="/customer/track" element={<CustomerTrack />} />
+        <Route path="customer/login" element={<TenantRedirect to="/tables" />} />
+        <Route path="user/table-select/:tableId" element={<TableSelectEntry />} />
+        <Route path="customer/menu" element={<CustomerMenu />} />
+        <Route path="customer/track" element={<CustomerTrack />} />
 
         {/* Staff/Admin protected — shared layout */}
-        <Route path="/admin" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+        <Route path="admin" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="tables"    element={<Tables />} />
@@ -114,24 +157,58 @@ function AnimatedRoutes() {
           <Route path="staff" element={<RoleRoute role="ADMIN"><StaffManagement /></RoleRoute>} />
         </Route>
 
-        {/* Catch-all */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        {/* Catch-all inside a tenant */}
+        <Route path="*" element={<TenantRedirect to="/" />} />
       </Routes>
     </AnimatePresence>
   )
 }
 
-export default function App() {
+/** SUPER_ADMIN console — belongs to no restaurant, so no TenantProvider. */
+function PlatformApp() {
   return (
-    <AuthProvider>
+    <AuthProvider scope={PLATFORM_SCOPE}>
       <PopupProvider>
-        <KioskSessionProvider>
-          <BrowserRouter>
-            <KioskPathSync />
-            <AnimatedRoutes />
-          </BrowserRouter>
-        </KioskSessionProvider>
+        <Routes>
+          <Route path="login" element={<PlatformLogin />} />
+          <Route path="auth/callback" element={<PlatformAuthCallback />} />
+          <Route element={<PlatformLayout />}>
+            <Route index element={<Navigate to="restaurants" replace />} />
+            <Route path="restaurants" element={<PlatformRestaurants />} />
+            <Route path="restaurants/new" element={<PlatformRestaurantNew />} />
+            <Route path="restaurants/:id" element={<PlatformRestaurantDetail />} />
+            <Route path="admins" element={<PlatformAdmins />} />
+          </Route>
+          <Route path="*" element={<Navigate to="/platform/restaurants" replace />} />
+        </Routes>
       </PopupProvider>
     </AuthProvider>
+  )
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        {/* Platform console */}
+        <Route path="/platform/*" element={<PlatformApp />} />
+
+        {/* One restaurant, resolved from :slug */}
+        <Route path="/r/:slug" element={<TenantProvider />}>
+          <Route path="*" element={<TenantApp />} />
+        </Route>
+
+        {/* Shared staff & admin sign-in. The restaurant comes from the Google
+            account, so staff only need to remember one address. */}
+        <Route path="/admin" element={<StaffLogin />} />
+        <Route path="/admin/choose" element={<StaffChooseRestaurant />} />
+        <Route path="/admin/*" element={<Navigate to="/admin" replace />} />
+
+        {/* No restaurant in the URL — a "scan the QR on your table" landing page.
+            Deliberately not a directory: each restaurant is reached by its own link. */}
+        <Route path="/" element={<NoRestaurant />} />
+        <Route path="*" element={<NoRestaurant />} />
+      </Routes>
+    </BrowserRouter>
   )
 }
