@@ -192,8 +192,8 @@ export default function App() {
           <Route path="*" element={<TenantApp />} />
         </Route>
 
-        {/* No restaurant in the URL — nothing to show. This app is deliberately
-            not a directory of restaurants; each tenant is reached by its own link. */}
+        {/* No restaurant in the URL — a "scan the QR on your table" landing page.
+            Deliberately not a directory: each restaurant is reached by its own link. */}
         <Route path="/" element={<NoRestaurant />} />
         <Route path="*" element={<NoRestaurant />} />
       </Routes>
