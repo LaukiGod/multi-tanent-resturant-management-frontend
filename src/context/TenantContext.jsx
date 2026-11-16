@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { useParams, useNavigate, useLocation, Outlet } from 'react-router-dom'
 import { setActiveTenant } from '../api/client'
 import { tenantApiBase } from '../config/api'
@@ -55,6 +55,10 @@ export function TenantProvider() {
     }
   }, [slug])
 
+  // Same object between renders unless the restaurant changes, so consumers do
+  // not re-render just because this provider did.
+  const value = useMemo(() => ({ slug, restaurant }), [slug, restaurant])
+
   if (status === 'loading') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-900 text-gray-400">
@@ -76,7 +80,7 @@ export function TenantProvider() {
   }
 
   return (
-    <TenantContext.Provider value={{ slug, restaurant }}>
+    <TenantContext.Provider value={value}>
       <Outlet />
     </TenantContext.Provider>
   )
@@ -99,10 +103,15 @@ export function useOptionalTenant() {
  */
 export function useTenantPath() {
   const { slug } = useTenant()
-  return (path) => {
-    if (typeof path !== 'string' || !path.startsWith('/')) return path
-    return `/r/${slug}${path === '/' ? '' : path}`
-  }
+  // Stable between renders (changes only with the slug), so it is safe in
+  // effect dependency lists.
+  return useCallback(
+    (path) => {
+      if (typeof path !== 'string' || !path.startsWith('/')) return path
+      return `/r/${slug}${path === '/' ? '' : path}`
+    },
+    [slug]
+  )
 }
 
 /**
@@ -111,19 +120,27 @@ export function useTenantPath() {
  * Every existing `navigate('/tables')` keeps working unchanged — the slug is
  * added here instead of at ~35 call sites. Numeric args (`navigate(-1)`) and
  * already-prefixed paths pass through untouched.
+ *
+ * The returned function must stay the same between renders, like React Router's
+ * own `navigate`. Pages list it in effect dependencies (the menus load dishes in
+ * an effect that depends on `navigate`), so a new function on every render would
+ * re-run those effects forever: fetch, re-render, fetch again.
  */
 export function useTenantNavigate() {
   const navigate = useNavigate()
   const toTenantPath = useTenantPath()
 
-  return (to, options) => {
-    if (typeof to === 'number') return navigate(to)
-    if (typeof to === 'string') return navigate(toTenantPath(to), options)
-    if (to && typeof to === 'object' && typeof to.pathname === 'string') {
-      return navigate({ ...to, pathname: toTenantPath(to.pathname) }, options)
-    }
-    return navigate(to, options)
-  }
+  return useCallback(
+    (to, options) => {
+      if (typeof to === 'number') return navigate(to)
+      if (typeof to === 'string') return navigate(toTenantPath(to), options)
+      if (to && typeof to === 'object' && typeof to.pathname === 'string') {
+        return navigate({ ...to, pathname: toTenantPath(to.pathname) }, options)
+      }
+      return navigate(to, options)
+    },
+    [navigate, toTenantPath]
+  )
 }
 
 /** Current location with the /r/:slug prefix stripped, for matching nav items. */
